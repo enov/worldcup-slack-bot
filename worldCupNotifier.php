@@ -50,6 +50,9 @@ $language = array(
         'Mi-temps',
         'Fin de la 2e période',
         'a repris',
+        'Mi-temps de la prolongation',
+        'Fin de la prolongation',
+        'Fin de la séance de tirs au but',
     ),
     'en-GB' => array(
         'The match between',
@@ -64,6 +67,9 @@ $language = array(
         'HALF TIME',
         'FULL TIME',
         'has resumed',
+        'END OF 1ST ET',
+        'END OF 2ND ET',
+        'END OF PENALTY SHOOTOUT',
     )
 );
 
@@ -93,12 +99,16 @@ const EVENT_OWN_GOAL = 34;
 const EVENT_FREE_KICK_GOAL = 39;
 const EVENT_PENALTY_GOAL = 41;
 const EVENT_PENALTY_SAVED = 60;
+const EVENT_PENALTY_CROSSBAR = 46;
 const EVENT_PENALTY_MISSED = 65;
 const EVENT_FOUL_PENALTY = 72;
 
 // Periods
 const PERIOD_1ST_HALF = 3;
 const PERIOD_2ND_HALF = 5;
+const PERIOD_1ST_ET   = 7;
+const PERIOD_2ND_ET   = 9;
+const PERIOD_PENALTY  = 11;
 
 /**
  * Below this line, you should modify at your own risk
@@ -304,6 +314,9 @@ foreach ($db['live_matches'] as $key => $matchId)
                             $subject = ':zap: '.$language[LOCALE][0].' '.$homeTeamName.' / '.$awayTeamName.' '.$language[LOCALE][8].'!';
                             break;
                         case PERIOD_2ND_HALF:
+                        case PERIOD_1ST_ET:
+                        case PERIOD_2ND_ET:
+                        case PERIOD_PENALTY:
                             $subject = ':runner: '.$language[LOCALE][0].' '.$homeTeamName.' / '.$awayTeamName.' '.$language[LOCALE][11];
                             break;
                     }
@@ -311,11 +324,23 @@ foreach ($db['live_matches'] as $key => $matchId)
                 case EVENT_PERIOD_END:
                     switch ($period) {
                         case PERIOD_1ST_HALF:
-                            $subject = ':toilet: '.$language[LOCALE][9].' '.$score;;
+                            $subject = ':toilet: '.$language[LOCALE][9].' '.$score;
                             $details = $matchTime;
                             break;
                         case PERIOD_2ND_HALF:
-                            $subject = ':stopwatch: '.$language[LOCALE][10].' '.$score;;
+                            $subject = ':stopwatch: '.$language[LOCALE][10].' '.$score;
+                            $details = $matchTime;
+                            break;
+                        case PERIOD_1ST_ET:
+                            $subject = ':toilet: '.$language[LOCALE][12].' '.$score;
+                            $details = $matchTime;
+                            break;
+                        case PERIOD_2ND_ET:
+                            $subject = ':stopwatch: '.$language[LOCALE][13].' '.$score;
+                            $details = $matchTime;
+                            break;
+                        case PERIOD_PENALTY:
+                            $subject = ':stopwatch: '.$language[LOCALE][14].' '.$score.' ('.$event["HomePenaltyGoals"].' - '.$event["AwayPenaltyGoals"].')';
                             $details = $matchTime;
                             break;
                     }
@@ -328,6 +353,10 @@ foreach ($db['live_matches'] as $key => $matchId)
                     $eventPlayerAlias = getEventPlayerAlias($event["IdPlayer"]);
                     $subject = ':soccer: '.$language[LOCALE][6].' '.$eventTeam.'!!!';
                     $details = $eventPlayerAlias.' ('.$matchTime.') '.$score;
+
+                    if ($period === PERIOD_PENALTY) {
+                        $details .= ' ('.$event["HomePenaltyGoals"].' - '.$event["AwayPenaltyGoals"].')';
+                    }
                     break;
                 case EVENT_OWN_GOAL:
                     $eventPlayerAlias = getEventPlayerAlias($event["IdPlayer"]);
@@ -354,9 +383,14 @@ foreach ($db['live_matches'] as $key => $matchId)
                     break;
                 case EVENT_PENALTY_MISSED:
                 case EVENT_PENALTY_SAVED:
+                case EVENT_PENALTY_CROSSBAR:
                     $eventPlayerAlias = getEventPlayerAlias($event["IdPlayer"]);
                     $subject = ':no_good: '.$language[LOCALE][7].' '.$eventTeam.'!!!';
                     $details =  $eventPlayerAlias.' ('.$matchTime.')';
+
+                    if ($period === PERIOD_PENALTY) {
+                        $details .= ' ('.$event["HomePenaltyGoals"].' - '.$event["AwayPenaltyGoals"].')';
+                    }
                     break;
 
                 // end of live match
